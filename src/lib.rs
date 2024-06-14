@@ -15,16 +15,12 @@ extern crate alloc;
 #[global_allocator]
 static ALLOC: mini_alloc::MiniAlloc = mini_alloc::MiniAlloc::INIT;
 
-// use stylus_sdk::{block, contract, crypto, evm, msg, tx};
 use sha3::{Digest, Keccak256};
 use alloc::string::String;
 use alloy_primitives::{Address, FixedBytes, U256};
 use alloy_sol_types::{sol, sol_data::{Address as SOLAddress, Bytes as SOLBytes, *}, SolType};
 // Import items from the SDK. The prelude contains common traits and macros.
-
 use stylus_sdk::{call::{Call, call}, prelude::*, block, msg, evm};
-
-
 
 
 sol!{
@@ -112,7 +108,7 @@ impl TimeLock  {
         if self.owner.get() != msg::sender() {
             return Err(TimeLockError::NotOwnerError(NotOwnerError{}));
         };
-        FixedBytes::<32>::from_slice(&[0; 32]);
+        
         let tx_id = self.get_tx_id(target, value, func.clone(), data.clone(), timestamp);
         if self.queued.get(tx_id) {
             return Err(TimeLockError::AlreadyQueuedError(AlreadyQueuedError{txId: tx_id.into()}));
@@ -193,8 +189,6 @@ impl TimeLock  {
 
         let mut queue_id = self.queued.setter(tx_id);
         queue_id.set(false);
-
-        //emit Cancel(_txId);
 
         evm::log(Cancel {
             txId: tx_id.into(),
