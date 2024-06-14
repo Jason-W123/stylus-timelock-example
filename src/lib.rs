@@ -79,9 +79,9 @@ pub enum TimeLockError {
 #[external]
 impl TimeLock  {
 
-    const MIN_DELAY: u64 = 1;
-    const MAX_DELAY: u64 = 1;
-    const GRACE_PERIOD: u64 = 1;
+    const MIN_DELAY: u64 = 10;
+    const MAX_DELAY: u64 = 1000;
+    const GRACE_PERIOD: u64 = 1000;
 
     pub fn get_tx_id(
         &mut self,
