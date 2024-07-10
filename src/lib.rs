@@ -26,6 +26,7 @@ use stylus_sdk::{call::{Call, call}, prelude::*, block, msg, evm};
 type TxIdHashType = (SOLAddress, Uint<256>, SOLBytes, SOLBytes, Uint<256>);
 
 sol!{
+    error AlreadyInitialized();
     error NotOwnerError();
     error AlreadyQueuedError(bytes32 txId);
     error TimestampNotInRangeError(uint256 blockTimestamp, uint256 timestamp);
@@ -67,6 +68,8 @@ sol_storage! {
 // Error types for the TimeLock contract
 #[derive(SolidityError)]
 pub enum TimeLockError {
+    // Error for when the contract is already initialized.
+    AlreadyInitialized(AlreadyInitialized),
     // Error for when the sender is not the owner
     NotOwnerError(NotOwnerError),
     // Error for when the transaction is already queued
@@ -94,6 +97,18 @@ impl TimeLock  {
     // Grace period after the maximum delay
     pub const GRACE_PERIOD: u64 = 1000;
 
+    pub fn initialize(&mut self) -> Result<(), TimeLockError> {
+        if self.owner.get() != Address::default() {
+            return Err(TimeLockError::AlreadyInitialized(AlreadyInitialized{}))
+        }
+        self.owner.set(msg::sender());
+        Ok(())
+    }
+
+    pub fn owner(&self) -> Address {
+        self.owner.get()
+    }
+
     // Function to generate a transaction ID
     pub fn get_tx_id(
         &self, 
@@ -119,6 +134,11 @@ impl TimeLock  {
         // Create a FixedBytes<32> instance from the result vector
         // This is used as the transaction ID
         alloy_primitives::FixedBytes::<32>::from_slice(&result_vec)
+    }
+
+    // The `deposit` method is payable, so it can receive funds.
+    #[payable]
+    pub fn deposit(&self) {
     }
 
     // Function to queue a transaction for execution

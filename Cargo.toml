@@ -12,7 +12,7 @@ description = "Stylus hello world example"
 alloy-primitives = "0.7.5"
 alloy-sol-types = "0.7.5"
 mini-alloc = "0.4.2"
-stylus-sdk = { git = "https://github.com/OffchainLabs/stylus-sdk-rs", branch = "alloy-0.7.3", features = ["docs"] }
+stylus-sdk = { version = "0.5.1" , features = ["docs"] }
 hex = "0.4.3"
 sha3 = "0.10.8"
 
