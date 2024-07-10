@@ -173,6 +173,15 @@ impl TimeLock  {
         // Set the transaction as queued in the contract's state
         let mut queue_id = self.queued.setter(tx_id);
         queue_id.set(true);
+        // Log the Queue event
+        evm::log(Queue {
+            txId: tx_id.into(),
+            target,
+            value: value,
+            func: func,
+            data: data.to_vec().into(),
+            timestamp: timestamp,
+        });
         // If all checks pass and the transaction is successfully queued, return Ok
         Ok(())
     }
@@ -216,6 +225,9 @@ impl TimeLock  {
         let mut queue_id = self.queued.setter(tx_id);
         queue_id.set(false);
 
+        // Clone the data variable to ensure its lifetime is long enough
+        // let cloned_data: Vec<u8> = data.clone().into();
+        
         // Prepare calldata
         let mut hasher = Keccak256::new();
         hasher.update(func.as_bytes());
@@ -225,7 +237,7 @@ impl TimeLock  {
         let calldata = [&hashed_function_selector[..4], &data].concat();
         
         // Call the target contract with the provided parameters
-        match call(Call::new().value(value), target, &data) {
+        match call(Call::new().value(value), target, &calldata) {
             // Log the transaction execution if successful
             Ok(_) => {
                 evm::log(Execute {
@@ -233,7 +245,7 @@ impl TimeLock  {
                     target,
                     value: value,
                     func: func,
-                    data: calldata.into(),
+                    data: data.to_vec().into(),
                     timestamp: timestamp,
                 });
                 Ok(())
