@@ -20,7 +20,7 @@ use alloc::string::String;
 use alloy_primitives::{Address, FixedBytes, U256};
 use alloy_sol_types::{sol, sol_data::{Address as SOLAddress, Bytes as SOLBytes, *}, SolType};
 // Import items from the SDK. The prelude contains common traits and macros.
-use stylus_sdk::{call::{Call, call}, prelude::*, block, msg, evm};
+use stylus_sdk::{abi::Bytes, block, call::{call, Call}, evm, msg, prelude::*};
 
 // Define the types of the contract's storage.
 type TxIdHashType = (SOLAddress, Uint<256>, SOLBytes, SOLBytes, Uint<256>);
@@ -115,7 +115,7 @@ impl TimeLock  {
         target: Address, // Target address for the transaction
         value: U256, // Value to be transferred
         func: String, // Function name to be called
-        data: Vec<u8>, // Data to be passed to the function
+        data: Bytes, // Data to be passed to the function
         timestamp: U256, // Timestamp for the transaction
     ) -> FixedBytes<32>{
         
@@ -147,7 +147,7 @@ impl TimeLock  {
         target: Address, // Target address for the transaction
         value: U256, // Value to be transferred
         func: String, // Function name to be called
-        data: Vec<u8>, // Data to be passed to the function
+        data: Bytes, // Data to be passed to the function
         timestamp: U256, // Timestamp for the transaction
     ) -> Result<(), TimeLockError> {
         // Check if the caller is the owner of the contract
@@ -183,7 +183,7 @@ impl TimeLock  {
         target: Address, // Target address for the transaction
         value: U256, // Value to be transferred
         func: String, // Function name to be called
-        data: Vec<u8>, // Data to be passed to the function
+        data: Bytes, // Data to be passed to the function
         timestamp: U256, // Timestamp for the transaction
     ) -> Result<(), TimeLockError> {
         // Check if the caller is the owner of the contract
@@ -215,6 +215,14 @@ impl TimeLock  {
         // Set the transaction as not queued in the contract's state
         let mut queue_id = self.queued.setter(tx_id);
         queue_id.set(false);
+
+        // Prepare calldata
+        let mut hasher = Keccak256::new();
+        hasher.update(func.as_bytes());
+        // Get function selector
+        let hashed_function_selector = hasher.finalize();
+        // Combine function selector and input data
+        let calldata = [&hashed_function_selector[..4], &data].concat();
         
         // Call the target contract with the provided parameters
         match call(Call::new().value(value), target, &data) {
@@ -225,7 +233,7 @@ impl TimeLock  {
                     target,
                     value: value,
                     func: func,
-                    data: data.into(),
+                    data: calldata.into(),
                     timestamp: timestamp,
                 });
                 Ok(())
@@ -241,7 +249,7 @@ impl TimeLock  {
         target: Address,
         value: U256,
         func: String,
-        data: Vec<u8>,
+        data: Bytes,
         timestamp: U256,
     ) -> Result<(), TimeLockError> {
         // Check if the caller is the owner of the contract
